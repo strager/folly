@@ -140,7 +140,7 @@ class SingletonThreadLocal {
     return *getWrapperTL();
   }
 
-#ifdef FOLLY_TLS
+#if defined(FOLLY_TLS) && FOLLY_HAVE_THREAD_LOCAL
   FOLLY_NOINLINE static T& getSlow(Wrapper*& cache) {
     static thread_local Wrapper** check = &cache;
     CHECK_EQ(check, &cache) << "inline function static thread_local merging";
@@ -152,7 +152,7 @@ class SingletonThreadLocal {
 
  public:
   FOLLY_EXPORT FOLLY_ALWAYS_INLINE static T& get() {
-#ifdef FOLLY_TLS
+#if defined(FOLLY_TLS) && FOLLY_HAVE_THREAD_LOCAL
     static thread_local Wrapper* cache;
     return FOLLY_LIKELY(!!cache) ? *cache : getSlow(cache);
 #else

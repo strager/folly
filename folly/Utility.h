@@ -125,6 +125,7 @@ T exchange(T& obj, U&& new_value) {
 
 #endif
 
+#if 0
 namespace utility_detail {
 template <typename...>
 struct make_seq_cat;
@@ -168,11 +169,13 @@ struct make_seq<0> {
   using apply = S0;
 };
 } // namespace utility_detail
+#endif
 
-#if __cpp_lib_integer_sequence || _MSC_VER
+#if __cpp_lib_integer_sequence || _MSC_VER || 1
 
 /* using override */ using std::integer_sequence;
 /* using override */ using std::index_sequence;
+/* using override */ using std::make_index_sequence;
 
 #else
 
@@ -192,6 +195,7 @@ using index_sequence = integer_sequence<std::size_t, Ints...>;
 
 #endif
 
+#if 0
 #if FOLLY_HAS_BUILTIN(__make_integer_seq) || _MSC_FULL_VER >= 190023918
 
 template <typename T, std::size_t Size>
@@ -207,8 +211,18 @@ using make_integer_sequence = typename utility_detail::make_seq<
 
 template <std::size_t Size>
 using make_index_sequence = make_integer_sequence<std::size_t, Size>;
+#endif
+#if 0
 template <class... T>
 using index_sequence_for = make_index_sequence<sizeof...(T)>;
+#else
+template <class... T>
+struct index_sequence_for_helper {
+    using type = make_index_sequence<sizeof...(T)>;
+};
+template <class... T>
+using index_sequence_for = typename index_sequence_for_helper<T...>::type;
+#endif
 
 /**
  *  Backports from C++17 of:

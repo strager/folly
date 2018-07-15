@@ -36,12 +36,16 @@
 #include <folly/portability/Builtins.h>
 
 #if FOLLY_SSE >= 3
-#include <nmmintrin.h>
+#include <emmintrin.h>
+#include <tmmintrin.h>
 namespace folly {
 namespace detail {
 extern const std::array<std::array<std::uint32_t, 4>, 256> groupVarintSSEMasks;
 } // namespace detail
 } // namespace folly
+#endif
+#if FOLLY_SSE_PREREQ(4, 2)
+#include <nmmintrin.h>
 #endif
 
 namespace folly {
