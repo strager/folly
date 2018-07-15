@@ -55,7 +55,9 @@
 #include <arm_neon.h> // uint8x16t intrinsics
 #else // SSE2
 #include <immintrin.h> // __m128i intrinsics
+#if FOLLY_SSE_PREREQ(4, 2)
 #include <nmmintrin.h> // _mm_crc32_u64
+#endif
 #include <xmmintrin.h> // _mm_prefetch
 #endif
 #endif
