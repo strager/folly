@@ -16,6 +16,7 @@
 #include <folly/chrono/Conv.h>
 
 #include <folly/portability/GTest.h>
+#include <ratio>
 
 using namespace folly;
 using namespace std::chrono;
@@ -361,13 +362,33 @@ TEST(Conv, stdChronoToTimespec) {
   EXPECT_EQ(36000, ts.tv_sec);
   EXPECT_EQ(0, ts.tv_nsec);
 
-  ts = to<struct timespec>(createTimePoint<steady_clock>(123ns));
-  EXPECT_EQ(0, ts.tv_sec);
-  EXPECT_EQ(123, ts.tv_nsec);
+  if (std::ratio_less_equal<steady_clock::period, std::nano>::value) {
+    ts = to<struct timespec>(createTimePoint<steady_clock>(123ns));
+    EXPECT_EQ(0, ts.tv_sec);
+    EXPECT_EQ(123, ts.tv_nsec);
+  }
+  if (std::ratio_less_equal<steady_clock::period, std::milli>::value) {
+    ts = to<struct timespec>(createTimePoint<steady_clock>(123ms));
+    EXPECT_EQ(0, ts.tv_sec);
+    EXPECT_EQ(123 * 1e6, ts.tv_nsec);
+  }
+  ts = to<struct timespec>(createTimePoint<steady_clock>(5s));
+  EXPECT_EQ(5, ts.tv_sec);
+  EXPECT_EQ(0, ts.tv_nsec);
 
-  ts = to<struct timespec>(createTimePoint<system_clock>(123ns));
-  EXPECT_EQ(0, ts.tv_sec);
-  EXPECT_EQ(123, ts.tv_nsec);
+  if (std::ratio_less_equal<system_clock::period, std::nano>::value) {
+    ts = to<struct timespec>(createTimePoint<system_clock>(123ns));
+    EXPECT_EQ(0, ts.tv_sec);
+    EXPECT_EQ(123, ts.tv_nsec);
+  }
+  if (std::ratio_less_equal<system_clock::period, std::milli>::value) {
+    ts = to<struct timespec>(createTimePoint<system_clock>(123ms));
+    EXPECT_EQ(0, ts.tv_sec);
+    EXPECT_EQ(123 * 1e6, ts.tv_nsec);
+  }
+  ts = to<struct timespec>(createTimePoint<system_clock>(5s));
+  EXPECT_EQ(5, ts.tv_sec);
+  EXPECT_EQ(0, ts.tv_nsec);
 
   // Test with some unusual durations where neither the numerator nor
   // denominator are 1.
