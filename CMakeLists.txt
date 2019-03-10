@@ -582,9 +582,9 @@ if (BUILD_TESTS)
       TEST DelayedDestructionTest SOURCES DelayedDestructionTest.cpp
       TEST DelayedDestructionBaseTest SOURCES DelayedDestructionBaseTest.cpp
       TEST DestructorCheckTest SOURCES DestructorCheckTest.cpp
-      TEST EventBaseTest SOURCES EventBaseTest.cpp
+      TEST EventBaseTest BROKEN SOURCES EventBaseTest.cpp
       TEST EventBaseLocalTest SOURCES EventBaseLocalTest.cpp
-      TEST HHWheelTimerTest SOURCES HHWheelTimerTest.cpp
+      TEST HHWheelTimerTest BROKEN SOURCES HHWheelTimerTest.cpp
       TEST HHWheelTimerSlowTests SLOW
         SOURCES HHWheelTimerSlowTests.cpp
       TEST NotificationQueueTest SOURCES NotificationQueueTest.cpp

@@ -621,7 +621,7 @@ TEST(AsyncFileWriter, discard) {
  * Test that AsyncFileWriter operates correctly after a fork() in both the
  * parent and child processes.
  */
-TEST(AsyncFileWriter, fork) {
+TEST(AsyncFileWriter, DISABLED_fork) {
 #if FOLLY_HAVE_PTHREAD_ATFORK
   TemporaryFile tmpFile{"logging_test"};
 

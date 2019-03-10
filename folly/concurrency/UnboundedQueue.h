@@ -213,7 +213,7 @@ template <
     bool SingleConsumer,
     bool MayBlock,
     size_t LgSegmentSize = 8,
-    size_t LgAlign = constexpr_log2(hardware_destructive_interference_size),
+    size_t LgAlign = 4,
     template <typename> class Atom = std::atomic>
 class UnboundedQueue {
   using Ticket = uint64_t;
@@ -865,7 +865,7 @@ template <
     typename T,
     bool MayBlock,
     size_t LgSegmentSize = 8,
-    size_t LgAlign = constexpr_log2(hardware_destructive_interference_size),
+    size_t LgAlign = 4,
     template <typename> class Atom = std::atomic>
 using USPSCQueue =
     UnboundedQueue<T, true, true, MayBlock, LgSegmentSize, LgAlign, Atom>;
@@ -874,7 +874,7 @@ template <
     typename T,
     bool MayBlock,
     size_t LgSegmentSize = 8,
-    size_t LgAlign = constexpr_log2(hardware_destructive_interference_size),
+    size_t LgAlign = 4,
     template <typename> class Atom = std::atomic>
 using UMPSCQueue =
     UnboundedQueue<T, false, true, MayBlock, LgSegmentSize, LgAlign, Atom>;
@@ -883,7 +883,7 @@ template <
     typename T,
     bool MayBlock,
     size_t LgSegmentSize = 8,
-    size_t LgAlign = constexpr_log2(hardware_destructive_interference_size),
+    size_t LgAlign = 4,
     template <typename> class Atom = std::atomic>
 using USPMCQueue =
     UnboundedQueue<T, true, false, MayBlock, LgSegmentSize, LgAlign, Atom>;
@@ -892,7 +892,7 @@ template <
     typename T,
     bool MayBlock,
     size_t LgSegmentSize = 8,
-    size_t LgAlign = constexpr_log2(hardware_destructive_interference_size),
+    size_t LgAlign = 4,
     template <typename> class Atom = std::atomic>
 using UMPMCQueue =
     UnboundedQueue<T, false, false, MayBlock, LgSegmentSize, LgAlign, Atom>;

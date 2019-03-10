@@ -182,7 +182,7 @@ TEST(PCREPatternMatch, Simple) {
   EXPECT_NO_PCRE_MATCH(".*ac.*", "gabca");
 }
 
-TEST(CaptureFD, GlogPatterns) {
+TEST(CaptureFD, DISABLED_GlogPatterns) {
   CaptureFD err(fileno(stderr));
   LOG(INFO) << "All is well";
   EXPECT_NO_PCRE_MATCH(glogErrOrWarnPattern(), err.readIncremental());
@@ -202,7 +202,7 @@ TEST(CaptureFD, GlogPatterns) {
   }
 }
 
-TEST(CaptureFD, ChunkCob) {
+TEST(CaptureFD, DISABLED_ChunkCob) {
   std::vector<std::string> chunks;
   {
     CaptureFD err(fileno(stderr), [&](StringPiece p) {

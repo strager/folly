@@ -133,7 +133,7 @@ TEST(RetryingTest, policy_basic) {
   EXPECT_EQ(2, r.value());
 }
 
-TEST(RetryingTest, policy_capped_jittered_exponential_backoff) {
+TEST(RetryingTest, DISABLED_policy_capped_jittered_exponential_backoff) {
   multiAttemptExpectDurationWithin(5, milliseconds(200), milliseconds(400), [] {
     using ms = milliseconds;
     auto r = futures::retrying(

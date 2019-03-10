@@ -271,7 +271,7 @@ TEST(Wait, waitWithDuration) {
   }
 }
 
-TEST(Wait, multipleWait) {
+TEST(Wait, DISABLED_multipleWait) {
   auto f = futures::sleep(milliseconds(100));
   for (size_t i = 0; i < 5; ++i) {
     EXPECT_FALSE(f.isReady());

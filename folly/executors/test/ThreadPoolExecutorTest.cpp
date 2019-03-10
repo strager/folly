@@ -285,7 +285,7 @@ static void expiration() {
   EXPECT_EQ(1, expireCbCount);
 }
 
-TEST(ThreadPoolExecutorTest, CPUExpiration) {
+TEST(ThreadPoolExecutorTest, DISABLED_CPUExpiration) {
   expiration<CPUThreadPoolExecutor>();
 }
 

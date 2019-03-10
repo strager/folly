@@ -29,7 +29,7 @@ namespace folly {
  *  Contains the actual hazard pointer.
  */
 template <template <typename> class Atom>
-class alignas(hardware_destructive_interference_size) hazptr_rec {
+class hazptr_rec {
   Atom<const void*> hazptr_{nullptr}; // the hazard pointer
   hazptr_domain<Atom>* domain_;
   hazptr_rec* next_;

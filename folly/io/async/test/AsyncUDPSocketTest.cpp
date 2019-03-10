@@ -399,7 +399,7 @@ TEST_F(AsyncSocketIntegrationTest, PingPong) {
   ASSERT_GT(pingClient->pongRecvd(), 0);
 }
 
-TEST_F(AsyncSocketIntegrationTest, ConnectedPingPong) {
+TEST_F(AsyncSocketIntegrationTest, DISABLED_ConnectedPingPong) {
   server->setChangePortForWrites(false);
   startServer();
   auto pingClient = performPingPongTest(server->address(), false);

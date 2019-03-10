@@ -359,7 +359,7 @@ struct IndexedMemPool : boost::noncopyable {
     }
   };
 
-  struct alignas(hardware_destructive_interference_size) LocalList {
+  struct LocalList {
     AtomicStruct<TaggedPtr, Atom> head;
 
     LocalList() : head(TaggedPtr{}) {}
@@ -385,7 +385,7 @@ struct IndexedMemPool : boost::noncopyable {
 
   /// raw storage, only 1..min(size_,actualCapacity_) (inclusive) are
   /// actually constructed.  Note that slots_[0] is not constructed or used
-  alignas(hardware_destructive_interference_size) Slot* slots_;
+  Slot* slots_;
 
   /// use AccessSpreader to find your list.  We use stripes instead of
   /// thread-local to avoid the need to grow or shrink on thread start
@@ -394,8 +394,7 @@ struct IndexedMemPool : boost::noncopyable {
 
   /// this is the head of a list of node chained by globalNext, that are
   /// themselves each the head of a list chained by localNext
-  alignas(hardware_destructive_interference_size)
-      AtomicStruct<TaggedPtr, Atom> globalHead_;
+  AtomicStruct<TaggedPtr, Atom> globalHead_;
 
   ///////////// private methods
 

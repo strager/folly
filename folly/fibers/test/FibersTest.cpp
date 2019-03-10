@@ -108,7 +108,7 @@ TEST(FiberManager, batonTimedWaitPost) {
   loopController.loop(std::move(loopFunc));
 }
 
-TEST(FiberManager, batonTimedWaitTimeoutEvb) {
+TEST(FiberManager, DISABLED_batonTimedWaitTimeoutEvb) {
   size_t tasksComplete = 0;
 
   folly::EventBase evb;
@@ -147,7 +147,7 @@ TEST(FiberManager, batonTimedWaitTimeoutEvb) {
   EXPECT_EQ(2, tasksComplete);
 }
 
-TEST(FiberManager, batonTimedWaitPostEvb) {
+TEST(FiberManager, DISABLED_batonTimedWaitPostEvb) {
   size_t tasksComplete = 0;
 
   folly::EventBase evb;
