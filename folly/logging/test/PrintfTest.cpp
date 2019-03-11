@@ -161,11 +161,16 @@ TEST(PrintfTest, printfStyleMacros) {
   messages.clear();
 
   // Errors attempting to format the message should not throw
-  FB_LOGC(footest1234, ERR, "width overflow: %999999999999999999999d", 5);
+#if defined(__APPLE__)
+#define OVERFLOWING_WIDTH "2147483647"
+#else
+#define OVERFLOWING_WIDTH "999999999999999999999"
+#endif
+  FB_LOGC(footest1234, ERR, "width overflow: %" OVERFLOWING_WIDTH "d", 5);
   ASSERT_EQ(1, messages.size());
   EXPECT_EQ(
       "error formatting printf-style log message: "
-      "width overflow: %999999999999999999999d",
+      "width overflow: %" OVERFLOWING_WIDTH "d",
       messages[0].first.getMessage());
   messages.clear();
 }
