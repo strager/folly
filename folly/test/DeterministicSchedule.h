@@ -32,7 +32,7 @@
 #include <folly/ScopeGuard.h>
 #include <folly/concurrency/CacheLocality.h>
 #include <folly/detail/Futex.h>
-#include <folly/portability/Semaphore.h>
+#include <folly/synchronization/LifoSem.h>
 #include <folly/synchronization/detail/AtomicUtils.h>
 
 namespace folly {
@@ -235,14 +235,14 @@ class DeterministicSchedule : boost::noncopyable {
   static void joinAll(std::vector<std::thread>& children);
 
   /** Calls sem_post(sem) as part of a deterministic schedule. */
-  static void post(sem_t* sem);
+  static void post(LifoSem* sem);
 
   /** Calls sem_trywait(sem) as part of a deterministic schedule, returning
    *  true on success and false on transient failure. */
-  static bool tryWait(sem_t* sem);
+  static bool tryWait(LifoSem* sem);
 
   /** Calls sem_wait(sem) as part of a deterministic schedule. */
-  static void wait(sem_t* sem);
+  static void wait(LifoSem* sem);
 
   /** Used scheduler_ to get a random number b/w [0, n). If tls_sched is
    *  not set-up it falls back to std::rand() */
@@ -268,7 +268,7 @@ class DeterministicSchedule : boost::noncopyable {
   static void clearAuxChk();
 
   /** Remove the current thread's semaphore from sems_ */
-  static sem_t* descheduleCurrentThread();
+  static LifoSem* descheduleCurrentThread();
 
   /** Returns true if the current thread has already completed
    * the thread function, for example if the thread is executing
@@ -278,7 +278,7 @@ class DeterministicSchedule : boost::noncopyable {
   }
 
   /** Add sem back into sems_ */
-  static void reschedule(sem_t* sem);
+  static void reschedule(LifoSem* sem);
 
   static bool isActive() {
     return tls_sched != nullptr;
@@ -294,7 +294,7 @@ class DeterministicSchedule : boost::noncopyable {
   static void atomic_thread_fence(std::memory_order mo);
 
  private:
-  static FOLLY_TLS sem_t* tls_sem;
+  static FOLLY_TLS LifoSem* tls_sem;
   static FOLLY_TLS DeterministicSchedule* tls_sched;
   static FOLLY_TLS bool tls_exiting;
   static FOLLY_TLS DSchedThreadId tls_threadId;
@@ -302,10 +302,10 @@ class DeterministicSchedule : boost::noncopyable {
   static AuxChk aux_chk;
 
   std::function<size_t(size_t)> scheduler_;
-  std::vector<sem_t*> sems_;
+  std::vector<LifoSem*> sems_;
   std::unordered_set<std::thread::id> active_;
-  std::unordered_map<std::thread::id, sem_t*> joins_;
-  std::unordered_map<std::thread::id, sem_t*> exitingSems_;
+  std::unordered_map<std::thread::id, LifoSem*> joins_;
+  std::unordered_map<std::thread::id, LifoSem*> exitingSems_;
 
   std::vector<ThreadInfo> threadInfoMap_;
   ThreadTimestamps seqCstFenceOrder_;
@@ -319,8 +319,8 @@ class DeterministicSchedule : boost::noncopyable {
    * functions for some shared accesses. */
   uint64_t step_;
 
-  sem_t* beforeThreadCreate();
-  void afterThreadCreate(sem_t*);
+  LifoSem* beforeThreadCreate();
+  void afterThreadCreate(LifoSem*);
   void beforeThreadExit();
   void waitForBeforeThreadExit(std::thread& child);
   /** Calls user-defined auxiliary function (if any) */
@@ -724,7 +724,7 @@ void atomic_notify_all(const DeterministicAtomic<Integer>*) {}
  */
 struct DeterministicMutex {
   std::mutex m;
-  std::queue<sem_t*> waiters_;
+  std::queue<LifoSem*> waiters_;
   ThreadSyncVar syncVar_;
 
   DeterministicMutex() = default;
@@ -736,7 +736,7 @@ struct DeterministicMutex {
     FOLLY_TEST_DSCHED_VLOG(this << ".lock()");
     DeterministicSchedule::beforeSharedAccess();
     while (!m.try_lock()) {
-      sem_t* sem = DeterministicSchedule::descheduleCurrentThread();
+      LifoSem* sem = DeterministicSchedule::descheduleCurrentThread();
       if (sem) {
         waiters_.push(sem);
       }
@@ -769,7 +769,7 @@ struct DeterministicMutex {
       syncVar_.release();
     }
     if (!waiters_.empty()) {
-      sem_t* sem = waiters_.front();
+      LifoSem* sem = waiters_.front();
       DeterministicSchedule::reschedule(sem);
       waiters_.pop();
     }

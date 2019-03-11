@@ -15,6 +15,7 @@
  */
 
 #include <folly/test/DeterministicSchedule.h>
+#include <folly/synchronization/LifoSem.h>
 
 #include <assert.h>
 
@@ -30,7 +31,7 @@
 namespace folly {
 namespace test {
 
-FOLLY_TLS sem_t* DeterministicSchedule::tls_sem;
+FOLLY_TLS LifoSem* DeterministicSchedule::tls_sem;
 FOLLY_TLS DeterministicSchedule* DeterministicSchedule::tls_sched;
 FOLLY_TLS bool DeterministicSchedule::tls_exiting;
 FOLLY_TLS DSchedThreadId DeterministicSchedule::tls_threadId;
@@ -127,8 +128,7 @@ DeterministicSchedule::DeterministicSchedule(
   assert(tls_aux_act == nullptr);
 
   tls_exiting = false;
-  tls_sem = new sem_t;
-  sem_init(tls_sem, 0, 1);
+  tls_sem = new LifoSem(/*initialValue=*/1);
   sems_.push_back(tls_sem);
 
   tls_threadId = nextThreadId_++;
@@ -208,7 +208,7 @@ DeterministicSchedule::uniformSubset(uint64_t seed, size_t n, size_t m) {
 
 void DeterministicSchedule::beforeSharedAccess() {
   if (tls_sem) {
-    sem_wait(tls_sem);
+    tls_sem->wait();
   }
 }
 
@@ -217,7 +217,7 @@ void DeterministicSchedule::afterSharedAccess() {
   if (!sched) {
     return;
   }
-  sem_post(sched->sems_[sched->scheduler_(sched->sems_.size())]);
+  sched->sems_[sched->scheduler_(sched->sems_.size())]->post();
 }
 
 void DeterministicSchedule::afterSharedAccess(bool success) {
@@ -226,7 +226,7 @@ void DeterministicSchedule::afterSharedAccess(bool success) {
     return;
   }
   sched->callAux(success);
-  sem_post(sched->sems_[sched->scheduler_(sched->sems_.size())]);
+  sched->sems_[sched->scheduler_(sched->sems_.size())]->post();
 }
 
 size_t DeterministicSchedule::getRandNumber(size_t n) {
@@ -261,14 +261,14 @@ void DeterministicSchedule::clearAuxChk() {
   aux_chk = nullptr;
 }
 
-void DeterministicSchedule::reschedule(sem_t* sem) {
+void DeterministicSchedule::reschedule(LifoSem* sem) {
   auto sched = tls_sched;
   if (sched) {
-    sched->sems_.push_back(sem);
+    sched->sems_.push_back(std::move(sem));
   }
 }
 
-sem_t* DeterministicSchedule::descheduleCurrentThread() {
+LifoSem* DeterministicSchedule::descheduleCurrentThread() {
   auto sched = tls_sched;
   if (sched) {
     sched->sems_.erase(
@@ -277,16 +277,15 @@ sem_t* DeterministicSchedule::descheduleCurrentThread() {
   return tls_sem;
 }
 
-sem_t* DeterministicSchedule::beforeThreadCreate() {
-  sem_t* s = new sem_t;
-  sem_init(s, 0, 0);
+LifoSem* DeterministicSchedule::beforeThreadCreate() {
+  LifoSem* s = new LifoSem(/*initialValue=*/0);
   beforeSharedAccess();
   sems_.push_back(s);
   afterSharedAccess();
   return s;
 }
 
-void DeterministicSchedule::afterThreadCreate(sem_t* sem) {
+void DeterministicSchedule::afterThreadCreate(LifoSem* sem) {
   assert(tls_sem == nullptr);
   assert(tls_sched == nullptr);
   tls_exiting = false;
@@ -313,7 +312,7 @@ void DeterministicSchedule::beforeThreadExit() {
   beforeSharedAccess();
   auto parent = joins_.find(std::this_thread::get_id());
   if (parent != joins_.end()) {
-    reschedule(parent->second);
+    reschedule(std::move(parent->second));
     joins_.erase(parent);
   }
   sems_.erase(std::find(sems_.begin(), sems_.end(), tls_sem));
@@ -324,12 +323,11 @@ void DeterministicSchedule::beforeThreadExit() {
      * enters the thread local destructors. */
     exitingSems_[std::this_thread::get_id()] = tls_sem;
     afterSharedAccess();
-    sem_wait(tls_sem);
+    tls_sem->wait();
   }
   tls_sched = nullptr;
   tls_aux_act = nullptr;
   tls_exiting = true;
-  sem_destroy(tls_sem);
   delete tls_sem;
   tls_sem = nullptr;
 }
@@ -339,7 +337,7 @@ void DeterministicSchedule::waitForBeforeThreadExit(std::thread& child) {
   beforeSharedAccess();
   assert(tls_sched->joins_.count(child.get_id()) == 0);
   if (tls_sched->active_.count(child.get_id())) {
-    sem_t* sem = descheduleCurrentThread();
+    LifoSem* sem = descheduleCurrentThread();
     tls_sched->joins_.insert({child.get_id(), sem});
     afterSharedAccess();
     // Wait to be scheduled by exiting child thread
@@ -362,7 +360,7 @@ void DeterministicSchedule::joinAll(std::vector<std::thread>& children) {
    * shared access during thread local destructors.*/
   for (auto& child : children) {
     if (sched) {
-      sem_post(sched->exitingSems_[child.get_id()]);
+      sched->exitingSems_[child.get_id()]->post();
     }
     child.join();
   }
@@ -376,7 +374,7 @@ void DeterministicSchedule::join(std::thread& child) {
   atomic_thread_fence(std::memory_order_seq_cst);
   FOLLY_TEST_DSCHED_VLOG("joined " << std::hex << child.get_id());
   if (sched) {
-    sem_post(sched->exitingSems_[child.get_id()]);
+    sched->exitingSems_[child.get_id()]->post();
   }
   child.join();
 }
@@ -392,45 +390,39 @@ void DeterministicSchedule::callAux(bool success) {
   }
 }
 
-static std::unordered_map<sem_t*, std::unique_ptr<ThreadSyncVar>> semSyncVar;
+static std::unordered_map<LifoSem*, std::unique_ptr<ThreadSyncVar>> semSyncVar;
 
-void DeterministicSchedule::post(sem_t* sem) {
+void DeterministicSchedule::post(LifoSem* sem) {
   beforeSharedAccess();
   if (semSyncVar.count(sem) == 0) {
     semSyncVar[sem] = std::make_unique<ThreadSyncVar>();
   }
   semSyncVar[sem]->release();
-  sem_post(sem);
+  sem->post();
   FOLLY_TEST_DSCHED_VLOG("sem_post(" << sem << ")");
   afterSharedAccess();
 }
 
-bool DeterministicSchedule::tryWait(sem_t* sem) {
+bool DeterministicSchedule::tryWait(LifoSem* sem) {
   beforeSharedAccess();
   if (semSyncVar.count(sem) == 0) {
     semSyncVar[sem] = std::make_unique<ThreadSyncVar>();
   }
 
-  int rv = sem_trywait(sem);
-  int e = rv == 0 ? 0 : errno;
+  bool acquired = sem->tryWait();
   FOLLY_TEST_DSCHED_VLOG(
-      "sem_trywait(" << sem << ") = " << rv << " errno=" << e);
-  if (rv == 0) {
+      "sem_trywait(" << sem << ") = " << acquired);
+  if (acquired) {
     semSyncVar[sem]->acq_rel();
   } else {
     semSyncVar[sem]->acquire();
   }
 
   afterSharedAccess();
-  if (rv == 0) {
-    return true;
-  } else {
-    assert(e == EAGAIN);
-    return false;
-  }
+  return acquired;
 }
 
-void DeterministicSchedule::wait(sem_t* sem) {
+void DeterministicSchedule::wait(LifoSem* sem) {
   while (!tryWait(sem)) {
     // we're not busy waiting because this is a deterministic schedule
   }
