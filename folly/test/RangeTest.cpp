@@ -1018,7 +1018,18 @@ const size_t kPageSize = 4096;
 // This function will also initialize buf, which caller must free().
 void createProtectedBuf(StringPiece& contents, char** buf) {
   ASSERT_LE(contents.size(), kPageSize);
-  char* pageAlignedBuf = (char*)aligned_malloc(2 * kPageSize, kPageSize);
+#if defined(__APPLE__)
+  // libmalloc's free() can read from the end of adjacent allocations [1]. Allow
+  // free() to read data at the end of this allocation by reserving a readable
+  // page after the unreadable guard page.
+  //
+  // [1] https://github.com/sunbohong/apple-libmalloc/blob/78867d9cdd0c32ab5f991bf7d2cc473e4291bfa2/src/magazine_malloc.c#L445
+  int pagesToAllocateAfterGuardPage = 1;
+#else
+  int pagesToAllocateAfterGuardPage = 0;
+#endif
+  int pagesToAllocate = 2 + pagesToAllocateAfterGuardPage;
+  char* pageAlignedBuf = (char*)aligned_malloc(pagesToAllocate * kPageSize, kPageSize);
   if (pageAlignedBuf == nullptr) {
     FAIL();
   }
