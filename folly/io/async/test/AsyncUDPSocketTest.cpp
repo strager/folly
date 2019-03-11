@@ -29,6 +29,12 @@
 #include <folly/portability/GTest.h>
 #include <folly/portability/Sockets.h>
 
+#if defined(__APPLE__)
+#define FOLLY_SUPPORTS_ERR_MESSAGE_CALLBACK 0
+#else
+#define FOLLY_SUPPORTS_ERR_MESSAGE_CALLBACK 1
+#endif
+
 using folly::AsyncTimeout;
 using folly::AsyncUDPServerSocket;
 using folly::AsyncUDPSocket;
@@ -535,12 +541,12 @@ TEST_F(AsyncUDPSocketTest, TestConnect) {
   EXPECT_EQ(socket_->connect(socket_->address()), 0) << folly::errnoStr(errno);
 }
 
+#if defined(FOLLY_HAVE_MSG_ERRQUEUE) && FOLLY_SUPPORTS_ERR_MESSAGE_CALLBACK
 TEST_F(AsyncUDPSocketTest, TestErrToNonExistentServer) {
   socket_->resumeRead(&readCb);
   socket_->setErrMessageCallback(&err);
   folly::SocketAddress addr("127.0.0.1", 10000);
   bool errRecvd = false;
-#ifdef FOLLY_HAVE_MSG_ERRQUEUE
   EXPECT_CALL(err, errMessage_(_))
       .WillOnce(Invoke([this, &errRecvd](auto& cmsg) {
         if ((cmsg.cmsg_level == SOL_IP && cmsg.cmsg_type == IP_RECVERR) ||
@@ -554,11 +560,11 @@ TEST_F(AsyncUDPSocketTest, TestErrToNonExistentServer) {
         }
         evb_.terminateLoopSoon();
       }));
-#endif // FOLLY_HAVE_MSG_ERRQUEUE
   socket_->write(addr, folly::IOBuf::copyBuffer("hey"));
   evb_.loopForever();
   EXPECT_TRUE(errRecvd);
 }
+#endif // FOLLY_HAVE_MSG_ERRQUEUE
 
 TEST_F(AsyncUDPSocketTest, TestUnsetErrCallback) {
   socket_->resumeRead(&readCb);
@@ -572,6 +578,7 @@ TEST_F(AsyncUDPSocketTest, TestUnsetErrCallback) {
   evb_.loopForever();
 }
 
+#if FOLLY_SUPPORTS_ERR_MESSAGE_CALLBACK
 TEST_F(AsyncUDPSocketTest, CloseInErrorCallback) {
   socket_->resumeRead(&readCb);
   socket_->setErrMessageCallback(&err);
@@ -587,6 +594,7 @@ TEST_F(AsyncUDPSocketTest, CloseInErrorCallback) {
   evb_.loopForever();
   EXPECT_TRUE(errRecvd);
 }
+#endif
 
 TEST_F(AsyncUDPSocketTest, TestNonExistentServerNoErrCb) {
   socket_->resumeRead(&readCb);
