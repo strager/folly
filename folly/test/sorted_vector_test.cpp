@@ -72,7 +72,7 @@ struct CountCopyCtor {
   }
 
   int val_;
-  int count_;
+  int count_ = 0;
 };
 
 struct Opaque {
