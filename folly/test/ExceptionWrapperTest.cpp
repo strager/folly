@@ -248,6 +248,45 @@ TEST(ExceptionWrapper, from_exception_ptr_any) {
   EXPECT_TRUE(ew.is_compatible_with<int>());
 }
 
+TEST(ExceptionWrapper, move_assigning_from_empty_exception_wrapper) {
+  auto ew = exception_wrapper(std::runtime_error("foo"));
+  ew = exception_wrapper();
+  // @nocommit dedupe. assert_is_empty?
+  EXPECT_EQ(exception_wrapper::none(), ew.type());
+  EXPECT_FALSE(bool(ew));
+  EXPECT_EQ(nullptr, ew.get_exception());
+  EXPECT_EQ(nullptr, ew.get_exception<std::exception>());
+  EXPECT_EQ(nullptr, ew.get_exception<int>());
+  EXPECT_FALSE(ew.has_exception_ptr());
+  EXPECT_EQ(nullptr, ew.to_exception_ptr());
+  EXPECT_FALSE(ew.has_exception_ptr());
+  EXPECT_EQ("", ew.class_name());
+  EXPECT_EQ("", ew.what());
+  EXPECT_FALSE(ew.is_compatible_with<std::exception>());
+  EXPECT_FALSE(ew.is_compatible_with<int>());
+  EXPECT_DEATH(ew.throw_exception(), "empty folly::exception_wrapper");
+}
+
+TEST(ExceptionWrapper, copy_assigning_from_empty_exception_wrapper) {
+  auto ew = exception_wrapper(std::runtime_error("foo"));
+  auto empty = exception_wrapper();
+  ew = empty;
+  // @nocommit dedupe. assert_is_empty?
+  EXPECT_EQ(exception_wrapper::none(), ew.type());
+  EXPECT_FALSE(bool(ew));
+  EXPECT_EQ(nullptr, ew.get_exception());
+  EXPECT_EQ(nullptr, ew.get_exception<std::exception>());
+  EXPECT_EQ(nullptr, ew.get_exception<int>());
+  EXPECT_FALSE(ew.has_exception_ptr());
+  EXPECT_EQ(nullptr, ew.to_exception_ptr());
+  EXPECT_FALSE(ew.has_exception_ptr());
+  EXPECT_EQ("", ew.class_name());
+  EXPECT_EQ("", ew.what());
+  EXPECT_FALSE(ew.is_compatible_with<std::exception>());
+  EXPECT_FALSE(ew.is_compatible_with<int>());
+  EXPECT_DEATH(ew.throw_exception(), "empty folly::exception_wrapper");
+}
+
 TEST(ExceptionWrapper, with_exception_ptr_empty) {
   auto ew = exception_wrapper(std::exception_ptr());
   EXPECT_EQ(exception_wrapper::none(), ew.type());

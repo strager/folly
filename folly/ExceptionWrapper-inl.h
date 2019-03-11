@@ -426,11 +426,22 @@ inline Ex const* exception_wrapper::get_exception() const noexcept {
 
 inline std::exception_ptr const&
 exception_wrapper::to_exception_ptr() noexcept {
+  // @nocommit Why return a const&? This would be nicer if
+  // we didn't have to return a reference...
+  static const std::exception_ptr empty = nullptr;
   // Computing an exception_ptr is expensive so cache the result.
-  return (*this = vptr_->get_exception_ptr_(this)).eptr_.ptr_;
+  *this = vptr_->get_exception_ptr_(this);
+  // @nocommit Ideally we wouldn't have to branch (i.e. the
+  // branch would be done by vtable lookup).
+  if (*this) {
+    return eptr_.ptr_;
+  } else {
+    return empty;
+  }
 }
 inline std::exception_ptr exception_wrapper::to_exception_ptr() const noexcept {
-  return vptr_->get_exception_ptr_(this).eptr_.ptr_;
+  auto exception_ptr_wrapper = vptr_->get_exception_ptr_(this);
+  return exception_ptr_wrapper ? exception_ptr_wrapper.eptr_.ptr_ : nullptr;
 }
 
 inline std::type_info const& exception_wrapper::none() noexcept {
