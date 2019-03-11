@@ -575,10 +575,14 @@ TEST(ForwardTuple, Basic) {
                decltype(folly::forward_tuple(std::move(tuple))),
                std::tuple<int&&, double&&>>::value));
   EXPECT_EQ(folly::forward_tuple(std::move(tuple)), tuple);
+  // @nocommit
+  // gcc 7.4: const int&
+  // gcc 8.3: const int&&
+  // clang 7.0: const int&&
   EXPECT_TRUE(
       (std::is_same<
           decltype(folly::forward_tuple(std::move(folly::as_const(tuple)))),
-          std::tuple<const int&, const double&>>::value));
+          std::tuple<const int&&, const double&&>>::value));
   EXPECT_EQ(folly::forward_tuple(std::move(folly::as_const(tuple))), tuple);
 
   auto integer = 1;
