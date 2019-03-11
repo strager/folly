@@ -32,6 +32,7 @@
 #include <folly/portability/Unistd.h>
 #include <folly/synchronization/Baton.h>
 #include <folly/system/ThreadName.h>
+#include <event2/thread.h>
 
 namespace folly {
 
@@ -91,6 +92,7 @@ EventBase::EventBase(bool enableTimeMeasurement)
       observer_(nullptr),
       observerSampleCount_(0),
       executionObserver_(nullptr) {
+static int init = evthread_use_pthreads();
   struct event ev;
   {
     std::lock_guard<std::mutex> lock(libevent_mutex_);
@@ -102,13 +104,19 @@ EventBase::EventBase(bool enableTimeMeasurement)
     // call event_base_new().
     event_set(&ev, 0, 0, nullptr, nullptr);
     if (!ev.ev_base) {
-      evb_ = event_init();
+      /*evb_ =*/ event_init();
     }
   }
 
-  if (ev.ev_base) {
-    evb_ = event_base_new();
-  }
+  auto *config = event_config_new();
+  //int rc = event_config_avoid_method(config, "kqueue");
+  //CHECK(rc == 0);
+  //rc = event_config_avoid_method(config, "poll");
+  //CHECK(rc == 0);
+  //if (ev.ev_base) {
+    evb_ = event_base_new_with_config(config);
+  //}
+  printf("@strager method: %s\n", event_base_get_method(evb_));
 
   if (UNLIKELY(evb_ == nullptr)) {
     LOG(ERROR) << "EventBase(): Failed to init event base.";

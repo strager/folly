@@ -427,6 +427,8 @@ void AsyncUDPSocket::resumeRead(ReadCallback* cob) {
     cob->onReadError(ex);
     return;
   }
+
+  //handleRead();
 }
 
 void AsyncUDPSocket::pauseRead() {
@@ -536,6 +538,7 @@ int AsyncUDPSocket::connect(const folly::SocketAddress& address) {
 }
 
 void AsyncUDPSocket::handleRead() noexcept {
+  VLOG(2) << "@strager AsyncUDPSocket::handleRead called readCallback_=" << readCallback_;
   void* buf{nullptr};
   size_t len{0};
 
@@ -548,6 +551,7 @@ void AsyncUDPSocket::handleRead() noexcept {
     return;
   }
 
+  if (!readCallback_) return;
   readCallback_->getReadBuffer(&buf, &len);
   if (buf == nullptr || len == 0) {
     AsyncSocketException ex(
@@ -568,8 +572,10 @@ void AsyncUDPSocket::handleRead() noexcept {
   struct sockaddr* rawAddr = reinterpret_cast<sockaddr*>(&addrStorage);
   rawAddr->sa_family = localAddress_.getFamily();
 
+  VLOG(2) << "@strager AsyncUDPSocket::handleRead calling recvfrom...";
   ssize_t bytesRead =
       netops::recvfrom(fd_, buf, len, MSG_TRUNC, rawAddr, &addrLen);
+  VLOG(2) << "@strager AsyncUDPSocket::handleRead recvfrom returned " << bytesRead << " (" << strerror(errno) << ")";
   if (bytesRead >= 0) {
     clientAddress_.setFromSockaddr(rawAddr, addrLen);
 

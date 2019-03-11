@@ -161,7 +161,7 @@ class UDPServer {
     changePortForWrites_ = changePortForWrites;
   }
 
- private:
+ //private:
   EventBase* const evb_{nullptr};
   const folly::SocketAddress addr_;
 
@@ -228,7 +228,8 @@ class UDPClient : private AsyncUDPSocket::ReadCallback, private AsyncTimeout {
   }
 
   virtual void writePing(std::unique_ptr<folly::IOBuf> buf) {
-    socket_->write(server_, std::move(buf));
+    ssize_t written = socket_->write(server_, std::move(buf));
+    PCHECK(written >= 0); // @nocommit delete
   }
 
   void getReadBuffer(void** buf, size_t* len) noexcept override {
@@ -394,6 +395,17 @@ std::unique_ptr<UDPClient> AsyncSocketIntegrationTest::performPingPongTest(
   // Send ping
   cevb.runInEventBaseThread([&]() { client->start(server->address(), 100); });
 
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  VLOG(2) << "@strager performPingPongTest poking handleRead...";
+#if 0
+  sevb.runInEventBaseThread([&]() {
+      if (server->socket_ && server->socket_->socket_) {
+          VLOG(2) << "@strager performPingPongTest poking handleRead on thread...";
+          //server->socket_->socket_->handleRead();
+      }
+  });
+#endif
+
   // Wait for client to finish
   clientThread.join();
   return std::move(client);
@@ -458,6 +470,8 @@ TEST_F(AsyncSocketIntegrationTest, PingPongPauseResumeListening) {
 
   // Exchange does occur after resuming.
   server->resumeAccepting();
+  //sevb.runInEventBaseThread([&]() {});
+  std::this_thread::sleep_for(std::chrono::seconds(1));
   auto pingClient = performPingPongTest(folly::none, false);
   ASSERT_GT(pingClient->pongRecvd(), 0);
 }

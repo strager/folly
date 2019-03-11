@@ -15,7 +15,7 @@ find_library(LIBEVENT_LIB NAMES event PATHS ${LibEvent_LIB_PATHS})
 
 if (LIBEVENT_LIB AND LIBEVENT_INCLUDE_DIR)
   set(LibEvent_FOUND TRUE)
-  set(LIBEVENT_LIB ${LIBEVENT_LIB})
+  set(LIBEVENT_LIB ${LIBEVENT_LIB} event_pthreads)
 else ()
   set(LibEvent_FOUND FALSE)
 endif ()
