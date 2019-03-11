@@ -104,19 +104,13 @@ static int init = evthread_use_pthreads();
     // call event_base_new().
     event_set(&ev, 0, 0, nullptr, nullptr);
     if (!ev.ev_base) {
-      /*evb_ =*/ event_init();
+      evb_ = event_init();
     }
   }
 
-  auto *config = event_config_new();
-  //int rc = event_config_avoid_method(config, "kqueue");
-  //CHECK(rc == 0);
-  //rc = event_config_avoid_method(config, "poll");
-  //CHECK(rc == 0);
-  //if (ev.ev_base) {
-    evb_ = event_base_new_with_config(config);
-  //}
-  printf("@strager method: %s\n", event_base_get_method(evb_));
+  if (ev.ev_base) {
+    evb_ = event_base_new();
+  }
 
   if (UNLIKELY(evb_ == nullptr)) {
     LOG(ERROR) << "EventBase(): Failed to init event base.";

@@ -338,9 +338,7 @@ class AsyncUDPSocket : public EventHandler {
   // EventHandler
   void handlerReady(uint16_t events) noexcept override;
 
- public:
   void handleRead() noexcept;
- private:
   bool updateRegistration() noexcept;
 
   EventBase* eventBase_;

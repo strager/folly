@@ -239,9 +239,7 @@ class AsyncUDPServerSocket : private AsyncUDPSocket::ReadCallback,
   EventBase* const evb_;
   const size_t packetSize_;
 
- public:
   std::shared_ptr<AsyncUDPSocket> socket_;
- private:
 
   // List of listener to distribute packets among
   typedef std::pair<EventBase*, Callback*> Listener;
