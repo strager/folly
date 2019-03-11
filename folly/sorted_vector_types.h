@@ -176,9 +176,10 @@ void bulk_insert(
   }
   auto const prev_size = cont.size();
 
+  // @nocommit why not vec.insert(vec.end(), first, last)?
   std::copy(first, last, std::back_inserter(cont));
   auto const middle = cont.begin() + prev_size;
-  if (!std::is_sorted(middle, cont.end(), cmp)) {
+  if (!std::is_sorted(middle, cont.end(), cmp)) { // @nocommit wtf.
     std::sort(middle, cont.end(), cmp);
   }
   if (middle != cont.begin() && !cmp(*(middle - 1), *middle)) {
