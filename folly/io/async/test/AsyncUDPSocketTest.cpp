@@ -228,8 +228,8 @@ class UDPClient : private AsyncUDPSocket::ReadCallback, private AsyncTimeout {
   }
 
   virtual void writePing(std::unique_ptr<folly::IOBuf> buf) {
-    ssize_t written = socket_->write(server_, std::move(buf));
-    PCHECK(written >= 0); // @nocommit delete
+    [[maybe_unused]] ssize_t written = socket_->write(server_, std::move(buf));
+    //PCHECK(written >= 0); // @nocommit delete
   }
 
   void getReadBuffer(void** buf, size_t* len) noexcept override {
