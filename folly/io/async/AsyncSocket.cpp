@@ -496,6 +496,7 @@ void AsyncSocket::connect(
     }
 
 #if !defined(MSG_NOSIGNAL) && defined(F_SETNOSIGPIPE)
+    // @nocommit HERE WE GO!
     // iOS and OS X don't support MSG_NOSIGNAL; set F_SETNOSIGPIPE instead
     rv = fcntl(fd_.toFd(), F_SETNOSIGPIPE, 1);
     if (rv == -1) {
@@ -1705,6 +1706,15 @@ int AsyncSocket::setRecvBufSize(size_t bufsize) {
   return 0;
 }
 
+int AsyncSocket::setNoSigPipe(bool noSigPipe) noexcept {
+  int noSigPipeOption = noSigPipe ? 1 : 0;
+  return setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &noSigPipeOption);
+}
+
+int AsyncSocket::setNoSigPipe() noexcept {
+  return setNoSigPipe(/*noSigPipe=*/true);
+}
+
 int AsyncSocket::setTCPProfile(int profd) {
   if (fd_ == NetworkSocket()) {
     VLOG(4) << "AsyncSocket::setTCPProfile() called on non-open socket " << this
@@ -2396,6 +2406,7 @@ AsyncSocket::WriteResult AsyncSocket::sendSocketMessage(
               AsyncSocketException::UNKNOWN, "No more free local ports"));
     }
   } else {
+      printf("writing to fd %d\n", fd.toFd());
     totalWritten = netops::sendmsg(fd, msg, msg_flags);
   }
   return WriteResult(totalWritten);

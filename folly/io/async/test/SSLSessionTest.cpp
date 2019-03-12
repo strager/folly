@@ -86,9 +86,14 @@ TEST_F(SSLSessionTest, BasicTest) {
     getfds(fds);
     AsyncSSLSocket::UniquePtr clientSock(
         new AsyncSSLSocket(clientCtx, &eventBase, fds[0], serverName));
+    printf("clientSock fd: %d\n", clientSock->getFd());
+    int nosigpipe = 1;
+    PCHECK(clientSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     auto clientPtr = clientSock.get();
     AsyncSSLSocket::UniquePtr serverSock(
         new AsyncSSLSocket(dfServerCtx, &eventBase, fds[1], true));
+    printf("serverSock fd: %d\n", serverSock->getFd());
+    PCHECK(serverSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     SSLHandshakeClient client(std::move(clientSock), false, false);
     SSLHandshakeServerParseClientHello server(
         std::move(serverSock), false, false);
@@ -105,10 +110,15 @@ TEST_F(SSLSessionTest, BasicTest) {
     getfds(fds);
     AsyncSSLSocket::UniquePtr clientSock(
         new AsyncSSLSocket(clientCtx, &eventBase, fds[0], serverName));
+    printf("clientSock fd: %d\n", clientSock->getFd());
+    int nosigpipe = 1;
+    PCHECK(clientSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     auto clientPtr = clientSock.get();
     clientSock->setSSLSession(sess->getRawSSLSessionDangerous(), true);
     AsyncSSLSocket::UniquePtr serverSock(
         new AsyncSSLSocket(dfServerCtx, &eventBase, fds[1], true));
+    printf("serverSock fd: %d\n", serverSock->getFd());
+    PCHECK(serverSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     SSLHandshakeClient client(std::move(clientSock), false, false);
     SSLHandshakeServerParseClientHello server(
         std::move(serverSock), false, false);
@@ -126,9 +136,14 @@ TEST_F(SSLSessionTest, SerializeDeserializeTest) {
     getfds(fds);
     AsyncSSLSocket::UniquePtr clientSock(
         new AsyncSSLSocket(clientCtx, &eventBase, fds[0], serverName));
+    printf("clientSock fd: %d\n", clientSock->getFd());
+    int nosigpipe = 1;
+    PCHECK(clientSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     auto clientPtr = clientSock.get();
     AsyncSSLSocket::UniquePtr serverSock(
         new AsyncSSLSocket(dfServerCtx, &eventBase, fds[1], true));
+    printf("serverSock fd: %d\n", serverSock->getFd());
+    PCHECK(serverSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     SSLHandshakeClient client(std::move(clientSock), false, false);
     SSLHandshakeServerParseClientHello server(
         std::move(serverSock), false, false);
@@ -147,6 +162,9 @@ TEST_F(SSLSessionTest, SerializeDeserializeTest) {
     getfds(fds);
     AsyncSSLSocket::UniquePtr clientSock(
         new AsyncSSLSocket(clientCtx, &eventBase, fds[0], serverName));
+    printf("clientSock fd: %d\n", clientSock->getFd());
+    int nosigpipe = 1;
+    PCHECK(clientSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     auto clientPtr = clientSock.get();
     std::unique_ptr<SSLSession> sess =
         std::make_unique<SSLSession>(sessiondata);
@@ -154,6 +172,8 @@ TEST_F(SSLSessionTest, SerializeDeserializeTest) {
     clientSock->setSSLSession(sess->getRawSSLSessionDangerous(), true);
     AsyncSSLSocket::UniquePtr serverSock(
         new AsyncSSLSocket(dfServerCtx, &eventBase, fds[1], true));
+    printf("serverSock fd: %d\n", serverSock->getFd());
+    PCHECK(serverSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
     SSLHandshakeClient client(std::move(clientSock), false, false);
     SSLHandshakeServerParseClientHello server(
         std::move(serverSock), false, false);
@@ -169,9 +189,14 @@ TEST_F(SSLSessionTest, GetSessionID) {
   getfds(fds);
   AsyncSSLSocket::UniquePtr clientSock(
       new AsyncSSLSocket(clientCtx, &eventBase, fds[0], serverName));
+  printf("clientSock fd: %d\n", clientSock->getFd());
+  int nosigpipe = 1;
+  PCHECK(clientSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
   auto clientPtr = clientSock.get();
   AsyncSSLSocket::UniquePtr serverSock(
       new AsyncSSLSocket(dfServerCtx, &eventBase, fds[1], true));
+  printf("serverSock fd: %d\n", serverSock->getFd());
+  PCHECK(serverSock->setSockOpt(SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe) == 0);
   SSLHandshakeClient client(std::move(clientSock), false, false);
   SSLHandshakeServerParseClientHello server(
       std::move(serverSock), false, false);

@@ -19,12 +19,40 @@
 #include <folly/io/async/AsyncSocket.h>
 #include <folly/io/async/EventBase.h>
 #include <folly/portability/GTest.h>
+#include <folly/io/async/test/AsyncSocketTest.h>
 
 namespace folly {
 
 #ifndef TCP_SAVE_SYN
 #define TCP_SAVE_SYN 27
 #endif
+
+// @nocommit TODO: Audit all users of AsyncSocket. Does anyone override
+// SendMsgParamsCallback::getFlags and unset MSG_NOSIGNAL?
+// @nocommit TODO: See if we can expose AsyncSocket::connect's F_SETNOSIGPIPE
+// setting
+TEST(AsyncSocketTest, writingToLocalSocketWithDisconnectedPeerFailsWithEpipe) {
+  EventBase evb;
+
+  NetworkSocket fds[2];
+  PCHECK(netops::socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0);
+
+  auto peer0 = AsyncSocket::newSocket(&evb, fds[0]);
+  auto peer1 = AsyncSocket::newSocket(&evb, fds[1]);
+  peer0->setNoSigPipe(); // @nocommit
+  peer1->setNoSigPipe(); // @nocommit
+
+  peer0->closeNow();
+
+  WriteCallback wcb;
+  peer1->write(&wcb, "hello", 5);
+
+  evb.loop();
+
+  ASSERT_EQ(wcb.state, STATE_FAILED);
+  // @nocommit add a REMOTE_DISCONNECTED (or whatever) type to AsyncSocketException
+  EXPECT_EQ(wcb.exception.getErrno(), EPIPE);
+}
 
 TEST(AsyncSocketTest, getSockOpt) {
   EventBase evb;

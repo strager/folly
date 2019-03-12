@@ -713,6 +713,32 @@ class AsyncSocket : virtual public AsyncTransportWrapper {
    */
   int setRecvBufSize(size_t bufsize);
 
+  /**
+   * Set or unset the SO_NOSIGPIPE socket option.
+   *
+   * When set (noSigPipe == true): If the remote end closed the connection,
+   * write/send/sendmsg fails with EPIPE. This has the same effect as specifying
+   * the MSG_NOSIGNAL flag to sendmsg.
+   *
+   * When unset (noSigPipe == false): If the remote end closed the connection,
+   * write/send/sendmsg raises the SIGPIPE signal. This has the same effect as
+   * omitting the MSG_NOSIGNAL flag to sendmsg.
+   *
+   * On Linux, this function returns -1 and sets errno to ENOTSUP.
+   *
+   * Availablity: iOS; macOS
+   *
+   * See also: MSG_NOSIGNAL (Linux)
+   */
+  int setNoSigPipe(bool noSigPipe) noexcept;
+
+  /**
+   * Set the SO_NOSIGPIPE socket option.
+   *
+   * @overload
+   */
+  int setNoSigPipe() noexcept;
+
 /**
  * Sets a specific tcp personality
  * Available only on kernels 3.2 and greater
